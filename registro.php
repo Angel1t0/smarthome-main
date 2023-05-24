@@ -26,16 +26,17 @@ switch ($metodo) {
         }
         $s->execute();
         $r = $s->fetchAll(PDO::FETCH_ASSOC);
-        header("HTTP/1.1 200 OK");
-        echo json_encode($r);
+        header('Content-Type: application/json');
+        echo json_encode($r, JSON_PRETTY_PRINT);
         break;
     case 'POST':
-        if (isset($_POST['location']) && isset($_POST['name']) && isset($_POST['status'])) {
+        $json = json_decode(file_get_contents('php://input'), true);
+        if (isset($json['location']) && isset($json['name']) && isset($json['status'])) {
             $c = conexion();
             $s = $c->prepare("INSERT INTO bulb (location, name, status) VALUES (:location, :name, :status)");
-            $s->bindValue(":location", $_POST['location']);
-            $s->bindValue(":name", $_POST['name']);
-            $s->bindValue(":status", $_POST['status']);
+            $s->bindValue(":location", $json['location']);
+            $s->bindValue(":name", $json['name']);
+            $s->bindValue(":status", $json['status']);
             $s->execute();
             if ($s->rowCount() > 0) {
                 header("HTTP/1.1 201 Created");
@@ -46,22 +47,24 @@ switch ($metodo) {
             }
         } else {
             header("HTTP/1.1 400 Bad Request");
-            echo "Faltan datos";
+            echo json_encode(["error" => "Faltan datos"]);
         }
         break;
+
     case 'PUT':
+        $json = json_decode(file_get_contents('php://input'), true);
         if (isset($_GET['id'])) {
             $sql = "UPDATE bulb SET ";
-            (isset($_GET['location'])) ? $sql .= "location = :location, " : null;
-            (isset($_GET['name'])) ? $sql .= "name = :name, " : null;
-            (isset($_GET['status'])) ? $sql .= "status = :status, " : null;
+            (isset($json['location'])) ? $sql .= "location = :location, " : null;
+            (isset($json['name'])) ? $sql .= "name = :name, " : null;
+            (isset($json['status'])) ? $sql .= "status = :status, " : null;
             $sql = rtrim($sql, ", ");
             $sql .= " WHERE id = :id";
             $c = conexion();
             $s = $c->prepare($sql);
-            (isset($_GET['location'])) ? $s->bindValue(":location", $_GET['location']) : null;
-            (isset($_GET['name'])) ? $s->bindValue(":name", $_GET['name']) : null;
-            (isset($_GET['status'])) ? $s->bindValue(":status", $_GET['status']) : null;
+            (isset($json['location'])) ? $s->bindValue(":location", $json['location']) : null;
+            (isset($json['name'])) ? $s->bindValue(":name", $json['name']) : null;
+            (isset($json['status'])) ? $s->bindValue(":status", $json['status']) : null;
             $s->bindValue(":id", $_GET['id']);
             $s->execute();
             if ($s->rowCount() > 0) {
@@ -73,10 +76,11 @@ switch ($metodo) {
             }
         } else {
             header("HTTP/1.1 400 Bad Request");
-            echo "Faltan datos";
+            echo json_encode(["error" => "Faltan datos"]);
         }
         break;
     case 'DELETE':
+        $json = json_decode(file_get_contents('php://input'), true);
         if (isset($_GET['id'])) {
             $c = conexion();
             $s = $c->prepare("DELETE FROM bulb WHERE id = :id");
@@ -91,9 +95,10 @@ switch ($metodo) {
             }
         } else {
             header("HTTP/1.1 400 Bad Request");
-            echo "Faltan datos";
+            echo json_encode(["error" => "Faltan datos"]);
         }
         break;
+
     default:
         header("HTTP/1.1 400 Bad Request");
         echo "Método no permitido";
