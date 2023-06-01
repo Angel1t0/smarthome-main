@@ -25,9 +25,20 @@ switch ($metodo) {
             $s = $c->prepare("SELECT * FROM bulb");
         }
         $s->execute();
-        $r = $s->fetchAll(PDO::FETCH_ASSOC);
-        header('Content-Type: application/json');
-        echo json_encode($r, JSON_PRETTY_PRINT);
+        $s->setFetchMode(PDO::FETCH_ASSOC);
+        $r = $s->fetchAll();
+    
+        // Verificar el valor del campo "status" y asignar la URL correspondiente
+        foreach ($r as &$foco) {
+            if ($foco['status'] == 1) {
+                $foco['url'] = "http://192.168.1.67/activar_rele";
+            } else {
+                $foco['url'] = "http://192.168.1.67/desactivar_rele";
+            }
+        }
+    
+        header("Content-Type: application/json");
+        echo json_encode($r);
         break;
     case 'POST':
         $json = json_decode(file_get_contents('php://input'), true);
